@@ -1,7 +1,33 @@
 from __future__ import annotations
 from pathlib import Path
 import pandas as pd
+import warnings
 import re
+
+def _looks_like_datetime_column(col_name: str):
+    col = col_name.lower()
+
+    datetime_keywords = [
+        "time",
+        "timestamp",
+        "date",
+        "datetime",
+        "created",
+        "published",
+        "upload",
+        "day",
+        "month",
+        "year"
+    ]
+
+    return any(k in col for k in datetime_keywords)
+
+def _looks_like_datetime_column(name: str):
+    name = name.lower()
+    return any(
+        key in name
+        for key in ["time", "date", "timestamp", "created", "published", "upload"]
+    )
 
 def _infer_type_label(series: pd.Series):
 
@@ -17,22 +43,20 @@ def _infer_type_label(series: pd.Series):
         return "float"
 
     if pd.api.types.is_object_dtype(dtype) or isinstance(dtype, pd.StringDtype):
-        sample = series.dropna().head(100)
-        if len(sample) > 0:
-            try:
-                pd.to_datetime(sample)
+
+        if _looks_like_datetime_column(series.name):
+            sample = series.dropna().head(5)
+
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                parsed = pd.to_datetime(sample, errors="coerce")
+
+            if parsed.notna().all():
                 return "datetime"
-            except (ValueError, TypeError):
-                pass
+
         return "string"
 
     return str(dtype)
-
-
-def _derive_table_name(csv_path: str | Path):
-
-    return Path(csv_path).stem.lower()
-
 
 def _build_schema_description(table_name: str, df: pd.DataFrame):
 
@@ -90,16 +114,17 @@ def _clean_column_names(df: pd.DataFrame):
         col = str(col)
 
         col = re.sub(r"<.*?>", "", col)
-        col = re.sub(r"[^\w_]", "", col)
 
-        if not col:
-            col = "column"
+        col = re.sub(r"[^a-zA-Z0-9_]", " ", col)
 
-        # ensure unique names
-        original = col
+        tokens = col.lower().split()
+
+        col = tokens[-1] if tokens else "column"
+
+        base = col
         i = 1
         while col in seen:
-            col = f"{original}_{i}"
+            col = f"{base}_{i}"
             i += 1
 
         seen.add(col)
@@ -107,6 +132,7 @@ def _clean_column_names(df: pd.DataFrame):
 
     df.columns = clean_cols
     return df
+
 
 def load_schema(csv_input, *, parse_dates=True, encoding="utf-8", **read_csv_kwargs):
 
