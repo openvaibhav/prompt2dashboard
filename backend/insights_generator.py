@@ -21,7 +21,7 @@ def _dataframe_to_csv_snippet(df: pd.DataFrame):
         sample = sample.iloc[:, :8]
 
     for col in sample.select_dtypes(include="float").columns:
-        sample[col] = sample[col].round(2)
+        sample.loc[:, col] = sample[col].round(2)
 
     return sample.to_csv(index=False)
 
