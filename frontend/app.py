@@ -17,22 +17,23 @@ from chart_selector import generate_dashboard_charts
 from chart_renderer import render_chart
 from insights_generator import generate_insights
 from css_loader import load_css
-
+from followup_resolver import resolve_followup
 
 @st.cache_data(show_spinner=False)
 def cached_pipeline(df, schema, query):
     sql_query = generate_sql(query, schema)
     result_df = execute_query(df, sql_query)
     chart_types = generate_dashboard_charts(result_df, query)
-    fig = render_chart(result_df, chart_types)
     insights = generate_insights(result_df)
 
-    return sql_query, result_df, chart_types, fig, insights
+    return sql_query, result_df, chart_types, insights
 
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s — %(message)s")
 logger = logging.getLogger(__name__)
-
+            
+if "last_query" not in st.session_state:
+    st.session_state.last_query = None
 
 st.set_page_config(
     page_title="Prompt2Dashboard",
@@ -41,7 +42,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-load_css(Path("style.css"))
+load_css(_ROOT / "frontend" / "style.css")
 
 st.markdown("""
 <div class="p2d-header">
@@ -146,8 +147,15 @@ with main:
             with st.spinner("Reading dataset schema…"):
                 uploaded_file.seek(0)
                 df, schema = load_schema(uploaded_file)
+                
+            query = user_query
 
-            sql_query, result_df, chart_types, fig, insights = cached_pipeline(df, schema, user_query)
+            if st.session_state.last_query:
+                query = resolve_followup(st.session_state.last_query, user_query)
+
+            st.session_state.last_query = query
+
+            sql_query, result_df, chart_types, insights = cached_pipeline(df, schema, query)
 
         except ResourceExhausted as e:
             st.warning(
