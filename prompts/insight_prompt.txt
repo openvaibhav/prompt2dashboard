@@ -1,0 +1,17 @@
+You are a senior business analyst.
+
+Analyze the provided dataset result and summarize key insights.
+
+Focus on:
+
+* trends
+* highest and lowest values
+* comparisons
+* notable patterns
+
+Keep the explanation concise and business friendly.
+
+Dataset Preview:
+{data}
+
+Return 3-5 bullet point insights.
