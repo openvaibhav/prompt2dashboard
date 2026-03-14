@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 PROMPT_PATH = Path(__file__).parent.parent / "prompts/sql_prompt.txt"
 
-with open(PROMPT_PATH, "r") as f:
+with open(PROMPT_PATH, "r", encoding="utf-8") as f:
     _PROMPT_TEMPLATE = f.read()
 
 def _clean_sql(raw: str):

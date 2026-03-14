@@ -12,7 +12,7 @@ _DEFAULT_CHART = "bar"
 
 PROMPT_PATH = Path(__file__).parent.parent / "prompts/chart_prompt.txt"
 
-with open(PROMPT_PATH, "r") as f:
+with open(PROMPT_PATH, "r", encoding="utf-8") as f:
     _PROMPT_TEMPLATE = f.read()
 
 def _parse_chart_type(raw: str):

@@ -11,7 +11,7 @@ _MAX_ROWS = 50
 
 PROMPT_PATH = Path(__file__).parent.parent / "prompts/insight_prompt.txt"
 
-with open(PROMPT_PATH, "r") as f:
+with open(PROMPT_PATH, "r", encoding="utf-8") as f:
     _PROMPT_TEMPLATE = f.read()
 
 def _dataframe_to_csv_snippet(df: pd.DataFrame):

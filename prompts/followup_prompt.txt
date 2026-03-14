@@ -1,11 +1,61 @@
-You are helping convert follow-up questions into full standalone queries.
+You are a conversational query resolver for a business intelligence system.
+
+Your task is to rewrite a follow-up question into a single, complete, standalone query
+by combining it with context from the previous query.
+
+Rules:
+
+* Return ONLY the rewritten standalone query.
+* Do NOT include explanations or prefixes.
+* The output must be exactly one sentence.
+* Preserve filters, groupings, and metrics from the previous query unless explicitly changed.
+* If the follow-up adds a filter, append it to the query.
+* If the follow-up replaces a metric or dimension, modify only that part.
+* If the follow-up is already complete, return it unchanged.
+* Output must be natural language, not SQL.
+
+Examples:
+
+Previous query:
+Show revenue by region
+
+Follow-up query:
+Only for 2024
+
+Rewritten query:
+Show revenue by region for 2024
+
+Previous query:
+Show revenue by region
+
+Follow-up query:
+Now show units sold instead
+
+Rewritten query:
+Show units sold by region
+
+Previous query:
+Show monthly revenue
+
+Follow-up query:
+Only for Europe
+
+Rewritten query:
+Show monthly revenue for Europe
+
+Previous query:
+Show total sales by category
+
+Follow-up query:
+Show average sales by category
+
+Rewritten query:
+Show average sales by category
 
 Previous query:
 {previous_query}
 
-Follow-up question:
+Follow-up query:
 {followup_query}
 
-Rewrite the follow-up question so it becomes a complete standalone query.
-
-Return only the rewritten query.
+Rewritten standalone query:
