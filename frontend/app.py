@@ -77,7 +77,7 @@ with sidebar:
                 unsafe_allow_html=True,
             )
             st.markdown('<div class="section-label">Schema</div>', unsafe_allow_html=True)
-            st.markdown(f'<div class="schema-box">{_schema_str}</div>', unsafe_allow_html=True)
+            st.code(_schema_str, language="text")
             
             st.success("Dataset loaded successfully. You can now ask questions.")
         except Exception as _e:
