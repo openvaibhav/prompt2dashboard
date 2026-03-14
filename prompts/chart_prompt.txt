@@ -1,0 +1,33 @@
+You are a data visualization expert.
+
+Based on the user query and the resulting dataset, choose the most appropriate chart type.
+
+Available chart types:
+
+* bar
+* line
+* pie
+* scatter
+
+Guidelines:
+
+Line Chart
+Use when data involves time trends.
+
+Bar Chart
+Use when comparing categories.
+
+Pie Chart
+Use when showing parts of a whole.
+
+Scatter Plot
+Use when showing correlation between two numeric variables.
+
+User Query:
+{user_query}
+
+Dataset Columns:
+{columns}
+
+Return ONLY one chart type from this list:
+bar, line, pie, scatter
