@@ -39,9 +39,14 @@ def _build_schema_description(table_name: str, df: pd.DataFrame):
         f"Table: {table_name}",
         "Columns:",
     ]
+
     for col in df.columns:
         type_label = _infer_type_label(df[col])
-        lines.append(f"- {col} ({type_label})")
+        sample_values = df[col].dropna().head(3).tolist()
+
+        lines.append(
+            f"- {col} ({type_label}) | example values: {sample_values}"
+        )
 
     return "\n".join(lines)
 
@@ -64,6 +69,7 @@ def load_schema(csv_input, *, parse_dates=True, encoding="utf-8", **read_csv_kwa
 
     if not isinstance(csv_input, (str, Path)):
         try:
+            csv_input.seek(0)
             df = pd.read_csv(csv_input, encoding="utf-8", **common_kwargs)
         except UnicodeDecodeError:
             df = pd.read_csv(csv_input, encoding="latin-1", **common_kwargs)
@@ -82,7 +88,13 @@ def load_schema(csv_input, *, parse_dates=True, encoding="utf-8", **read_csv_kwa
             df = pd.read_csv(csv_path, encoding="latin-1", **common_kwargs)
 
         table_name = csv_path.stem.lower()
-
+        
     schema_description = _build_schema_description(table_name, df)
+
+    numeric_cols = df.select_dtypes(include="number").columns.tolist()
+    categorical_cols = df.select_dtypes(exclude="number").columns.tolist()
+
+    schema_description += "\n\nNumeric columns: " + ", ".join(numeric_cols)
+    schema_description += "\nCategorical columns: " + ", ".join(categorical_cols)
 
     return df, schema_description
