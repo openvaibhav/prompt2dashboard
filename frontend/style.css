@@ -1,92 +1,240 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Syne:wght@400;600;700;800&display=swap');
 
+/* ── base ── */
 html, body, [class*="css"] {
     font-family: 'DM Mono', monospace;
-    background-color: #0d0f14;
-    color: #c8d0e0;
+    background-color: #212121;
+    color: #ececec;
 }
 
-.p2d-header {
-    padding: 2.5rem 0 1.5rem;
-    border-bottom: 1px solid #1e2330;
-    margin-bottom: 2rem;
+/* hide streamlit default chrome */
+#MainMenu, footer, header { visibility: hidden; }
+[data-testid="stToolbar"] { display: none; }
+section[data-testid="stSidebar"] { display: none !important; }
+
+.block-container {
+    max-width: 860px !important;
+    padding: 1.5rem 1rem 8rem !important;
+    margin: 0 auto !important;
 }
-.p2d-title {
+
+/* ── landing ── */
+.landing-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 5rem 1rem 2rem;
+    text-align: center;
+}
+.landing-logo {
+    font-size: 3.2rem;
+    margin-bottom: 1rem;
+    animation: pulse 2.5s ease-in-out infinite;
+}
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+}
+.landing-title {
     font-family: 'Syne', sans-serif;
-    font-weight: 600;
-    font-size: 2.4rem;
+    font-weight: 800;
+    font-size: 2.6rem;
     letter-spacing: -0.03em;
-    color: #f5f7ff;
-    margin: 0;
+    color: #ececec;
+    margin: 0 0 0.4rem;
 }
-.p2d-title span {
-    color: #f5a623;
-}
-.p2d-subtitle {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.78rem;
-    color: #4a5168;
-    letter-spacing: 0.12em;
+.landing-title span { color: #f5a623; }
+.landing-sub {
+    font-size: 0.82rem;
+    color: #8e8ea0;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    margin-top: 0.5rem;
+    margin-bottom: 2.5rem;
 }
 
+/* ── file uploader ── */
 [data-testid="stFileUploader"] {
-    background: #13161f;
-    border: 1px dashed #2a2f40;
-    border-radius: 8px;
-    padding: 0.5rem;
-    transition: border-color 0.2s;
+    background: #2f2f2f;
+    border: 1.5px dashed #4a4a4a;
+    border-radius: 14px;
+    padding: 1.5rem 1rem;
+    transition: border-color 0.2s, background 0.2s;
+    text-align: center;
 }
 [data-testid="stFileUploader"]:hover {
     border-color: #f5a623;
+    background: #333;
+}
+[data-testid="stFileDropzoneInstructions"] {
+    color: #8e8ea0 !important;
+    font-size: 0.88rem !important;
 }
 
-[data-testid="stTextInput"] input,
-textarea {
-    background: #13161f !important;
-    border: 1px solid #2a2f40 !important;
-    border-radius: 6px !important;
-    color: #c8d0e0 !important;
+/* ── generic button base ── */
+[data-testid="stButton"] > button {
+    background: #2f2f2f;
+    color: #ececec;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    border: 1px solid #3f3f3f;
+    border-radius: 8px;
+    padding: 0.4rem 1rem;
+    transition: background 0.15s;
+}
+[data-testid="stButton"] > button:hover {
+    background: #3a3a3a;
+    border-color: #f5a623;
+    color: #f5a623;
+}
+
+/* ── + new csv button — fixed circle left of chat pill ── */
+[data-testid="stButton"][key="new_csv_btn"] {
+    position: fixed !important;
+    bottom: 1rem !important;
+    left: calc(50% - min(360px, 41vw) - 3rem) !important;
+    z-index: 1000 !important;
+    width: 2.2rem !important;
+    height: 2.2rem !important;
+}
+[data-testid="stButton"][key="new_csv_btn"] > button {
+    width: 2.2rem !important;
+    height: 2.2rem !important;
+    border-radius: 50% !important;
+    padding: 0 !important;
+    font-size: 1.15rem !important;
+    background: transparent !important;
+    border: 1px solid #3f3f3f !important;
+    color: #8e8ea0 !important;
+    min-width: unset !important;
+    line-height: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: color 0.15s, border-color 0.15s !important;
+}
+[data-testid="stButton"][key="new_csv_btn"] > button:hover {
+    color: #f5a623 !important;
+    border-color: #f5a623 !important;
+    background: transparent !important;
+    transform: none !important;
+}
+
+/* ── chat rows ── */
+.chat-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+    margin-bottom: 1.6rem;
+}
+.user-row { flex-direction: row-reverse; }
+
+.avatar-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    flex-shrink: 0;
+}
+.avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+.ai-avatar  { background: #2f2f2f; border: 1px solid #3a3a3a; }
+.user-avatar { background: #f5a623; border: none; margin-top: 8px; }
+
+.bubble {
+    border-radius: 14px;
+    padding: 0.85rem 1.1rem;
+    font-size: 0.9rem;
+    line-height: 1.65;
+    max-width: 82%;
+}
+.assistant-bubble {
+    background: transparent;
+    color: #ececec;
+    padding: 0;
+    max-width: 100%;
+}
+.user-bubble {
+    background: #2f2f2f;
+    border: 1px solid #3f3f3f;
+    color: #ececec;
+    border-bottom-right-radius: 4px;
+}
+
+/* ── example chips ── */
+.example-label {
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #5a5a6e;
+    margin: 1.5rem 0 0.75rem;
+}
+
+div[data-testid="column"] [data-testid="stButton"] > button {
+    background: #2a2a2a !important;
+    border: 1px solid #3a3a3a !important;
+    border-radius: 20px !important;
+    font-size: 0.74rem !important;
+    color: #a0a0b0 !important;
+    padding: 0.35rem 0.9rem !important;
+    text-align: left !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    transition: border-color 0.15s, color 0.15s !important;
+}
+div[data-testid="column"] [data-testid="stButton"] > button:hover {
+    border-color: #f5a623 !important;
+    color: #f5a623 !important;
+    background: #2f2f2f !important;
+}
+div[data-testid="column"] [data-testid="stButton"] {
+    min-width: 0 !important;
+    overflow: hidden !important;
+}
+
+/* ── chat input bar ── */
+[data-testid="stChatInput"] {
+    position: fixed !important;
+    bottom: 1rem !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: min(720px, 82vw) !important;
+    z-index: 999 !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+}
+[data-testid="stChatInput"] textarea {
+    color: #ececec !important;
     font-family: 'DM Mono', monospace !important;
     font-size: 0.9rem !important;
 }
-[data-testid="stTextInput"] input:focus,
-textarea:focus {
-    border-color: #f5a623 !important;
-    box-shadow: 0 0 0 2px rgba(245,166,35,0.15) !important;
+[data-testid="stChatInputSubmitButton"] svg {
+    fill: #f5a623 !important;
 }
 
-[data-testid="stButton"] > button {
-    background: #f5a623;
-    color: #0d0f14;
-    font-family: 'Syne', sans-serif;
-    font-weight: 700;
-    font-size: 0.85rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    border: none;
-    border-radius: 6px;
-    padding: 0.65rem 2rem;
-    transition: background 0.2s, transform 0.1s;
-    width: 100%;
-}
-[data-testid="stButton"] > button:hover {
-    background: #ffc057;
-    transform: translateY(-1px);
-}
-[data-testid="stButton"] > button:active {
-    transform: translateY(0);
-}
-
+/* ── section labels ── */
 .section-label {
     font-family: 'DM Mono', monospace;
-    font-size: 0.68rem;
+    font-size: 0.65rem;
     font-weight: 500;
     letter-spacing: 0.18em;
     text-transform: uppercase;
     color: #f5a623;
-    margin-bottom: 0.6rem;
+    margin: 1.2rem 0 0.5rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -95,106 +243,102 @@ textarea:focus {
     content: '';
     flex: 1;
     height: 1px;
-    background: #1e2330;
+    background: #2f2f2f;
 }
 
+/* ── sql block ── */
 .sql-block {
-    background: #0a0c10;
-    border: 1px solid #1e2330;
+    background: #1a1a1a;
+    border: 1px solid #2f2f2f;
     border-left: 3px solid #f5a623;
-    border-radius: 6px;
+    border-radius: 8px;
     padding: 1rem 1.2rem;
     font-family: 'DM Mono', monospace;
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     color: #7dd3a8;
     line-height: 1.7;
     overflow-x: auto;
     white-space: pre-wrap;
-    margin-bottom: 1.5rem;
 }
 
+/* ── insight card ── */
 .insight-card {
-    background: #13161f;
-    border: 1px solid #1e2330;
-    border-radius: 8px;
-    padding: 1.2rem 1.4rem;
+    background: #2a2a2a;
+    border: 1px solid #2f2f2f;
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
 }
 .insight-item {
     display: flex;
-    gap: 0.75rem;
-    padding: 0.55rem 0;
-    border-bottom: 1px solid #1a1d28;
-    font-size: 0.87rem;
+    align-items: flex-start;
+    gap: 0.55rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #333;
+    font-size: 0.84rem;
     line-height: 1.55;
-    color: #b0bace;
-
-    flex-wrap: wrap;
+    color: #a0a0b0;
     word-break: break-word;
 }
-.insight-item span {
-    flex: 1;
-}
-.insight-item:last-child {
-    border-bottom: none;
-}
-.insight-dot {
-    color: #f5a623;
-    font-size: 1rem;
-    flex-shrink: 0;
-    margin-top: 0.05rem;
-}
+.insight-item span { min-width: 0; }
+.insight-item:last-child { border-bottom: none; }
+.insight-dot { color: #f5a623; font-size: 1rem; flex-shrink: 0; margin-top: 0.18rem; line-height: 1; }
 
-.schema-box {
-    background: #0a0c10;
-    border: 1px solid #1e2330;
-    border-radius: 6px;
-    padding: 0.9rem 1.1rem;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.78rem;
-    color: #5a6280;
-    line-height: 1.8;
-    white-space: pre-wrap;
-    word-break: break-word;
-}
-
-.chip-row {
-    display: flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-    margin-bottom: 1.5rem;
-}
-.chip {
-    background: #13161f;
-    border: 1px solid #2a2f40;
-    border-radius: 20px;
-    padding: 0.3rem 0.85rem;
-    font-size: 0.72rem;
-    color: #6a7394;
-    letter-spacing: 0.05em;
-}
-.chip strong {
-    color: #f5a623;
-}
-
+/* ── dataframe ── */
 [data-testid="stDataFrame"] {
-    border: 1px solid #1e2330 !important;
+    border: 1px solid #2f2f2f !important;
     border-radius: 8px !important;
     overflow: hidden;
 }
 
-[data-testid="stAlert"] {
+/* ── metrics ── */
+[data-testid="stMetric"] {
+    background: #2a2a2a;
+    border: 1px solid #2f2f2f;
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+}
+[data-testid="stMetricLabel"] { color: #8e8ea0 !important; font-size: 0.72rem !important; }
+[data-testid="stMetricValue"] { color: #ececec !important; font-size: 1.3rem !important; }
+
+/* ── spinner / alerts ── */
+[data-testid="stSpinner"] p { color: #f5a623 !important; font-size: 0.83rem !important; }
+[data-testid="stAlert"] { border-radius: 8px !important; font-size: 0.83rem !important; }
+
+hr { border-color: #2f2f2f !important; margin: 1.5rem 0 !important; }
+
+/* ── code block  ── */
+pre {
+    background: #1a1a1a !important;
+    color: #7dd3a8 !important;
     border-radius: 6px !important;
-    font-family: 'DM Mono', monospace !important;
-    font-size: 0.83rem !important;
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+    overflow-x: hidden !important;
+}
+code {
+    background: #1a1a1a !important;
+    color: #7dd3a8 !important;
+    border-radius: 6px !important;
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
 }
 
-hr {
-    border-color: #1e2330 !important;
-    margin: 2rem 0 !important;
+/* ── download button ── */
+[data-testid="stDownloadButton"] > button {
+    background: #2f2f2f !important;
+    border: 1px solid #3a3a3a !important;
+    color: #a0a0b0 !important;
+    font-size: 0.78rem !important;
+    border-radius: 8px !important;
 }
-
-[data-testid="stSpinner"] p {
-    font-family: 'DM Mono', monospace !important;
+[data-testid="stDownloadButton"] > button:hover {
+    border-color: #f5a623 !important;
     color: #f5a623 !important;
-    font-size: 0.83rem !important;
+}
+
+/* ── examples disabled state ── */
+.examples-disabled div[data-testid="column"] [data-testid="stButton"] > button {
+    opacity: 0.35 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
 }
