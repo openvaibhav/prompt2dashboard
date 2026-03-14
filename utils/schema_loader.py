@@ -58,6 +58,8 @@ def safe_read_csv(file):
 
     for enc in encodings:
         try:
+            if hasattr(file, "seek"):
+                file.seek(0)
             return pd.read_csv(file, encoding=enc)
         except UnicodeDecodeError:
             continue
@@ -82,20 +84,25 @@ def _find_header_line(file):
 
 def _clean_column_names(df: pd.DataFrame):
     clean_cols = []
+    seen = set()
 
     for col in df.columns:
         col = str(col)
 
-        # remove html junk
         col = re.sub(r"<.*?>", "", col)
-
-        # remove weird characters
         col = re.sub(r"[^\w_]", "", col)
 
-        # fallback if empty
         if not col:
             col = "column"
 
+        # ensure unique names
+        original = col
+        i = 1
+        while col in seen:
+            col = f"{original}_{i}"
+            i += 1
+
+        seen.add(col)
         clean_cols.append(col)
 
     df.columns = clean_cols
@@ -115,12 +122,19 @@ def load_schema(csv_input, *, parse_dates=True, encoding="utf-8", **read_csv_kwa
             try:
                 df = pd.read_csv(csv_input, skiprows=header_line, encoding="utf-8", **common_kwargs)
                 df = _clean_column_names(df)
+                df = df.loc[:, ~df.columns.str.contains("^Unnamed")]
+                df.columns = [c.lower() for c in df.columns]
             except UnicodeDecodeError:
                 csv_input.seek(0)
                 df = pd.read_csv(csv_input, skiprows=header_line, encoding="latin-1", **common_kwargs)
                 df = _clean_column_names(df)
+                df = df.loc[:, ~df.columns.str.contains("^Unnamed")]
+                df.columns = [c.lower() for c in df.columns]
         else:
             df = safe_read_csv(csv_input)
+            df = _clean_column_names(df)
+            df = df.loc[:, ~df.columns.str.contains("^Unnamed")]
+            df.columns = [c.lower() for c in df.columns]
 
         table_name = "uploaded_dataset"
 
@@ -137,11 +151,18 @@ def load_schema(csv_input, *, parse_dates=True, encoding="utf-8", **read_csv_kwa
             try:
                 df = pd.read_csv(csv_path, skiprows=header_line, encoding="utf-8", **common_kwargs)
                 df = _clean_column_names(df)
+                df = df.loc[:, ~df.columns.str.contains("^Unnamed")]
+                df.columns = [c.lower() for c in df.columns]
             except UnicodeDecodeError:
                 df = pd.read_csv(csv_path, skiprows=header_line, encoding="latin-1", **common_kwargs)
                 df = _clean_column_names(df)
+                df = df.loc[:, ~df.columns.str.contains("^Unnamed")]
+                df.columns = [c.lower() for c in df.columns]
         else:
             df = safe_read_csv(csv_path)
+            df = _clean_column_names(df)
+            df = df.loc[:, ~df.columns.str.contains("^Unnamed")]
+            df.columns = [c.lower() for c in df.columns]
 
         table_name = csv_path.stem.lower()
 

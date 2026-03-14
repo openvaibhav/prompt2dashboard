@@ -6,6 +6,9 @@ Your task is to generate a valid SQL query based on the user's question and the 
 
 {schema}
 
+## AVAILABLE COLUMNS
+{columns}
+
 ## RULES
 
 1. Use ONLY columns listed in the schema.
@@ -32,6 +35,9 @@ Your task is to generate a valid SQL query based on the user's question and the 
 
 10. If the user asks to compare two metrics (e.g., views vs likes),
 do NOT aggregate them. Return the raw columns so a scatter plot can be generated.
+
+11. If the user asks for "engagement", compute it as:
+likes + comments + shares
 
 ## EXAMPLES
 
