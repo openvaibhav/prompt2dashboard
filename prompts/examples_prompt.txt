@@ -1,0 +1,34 @@
+You are improving example questions for a conversational data analytics dashboard.
+
+A user has uploaded a dataset and base_examples. The dataset schema and base examples are provided below.
+
+DATASET SCHEMA
+{schema}
+
+Base example questions:
+{base_examples}
+
+Your task:
+Generate example questions that a user could ask about this dataset using the Base example questions,rewrite ,improve or create new questions so they sound natural for a user asking about the dataset.
+
+Requirements:
+
+- Use ONLY column names that exist in the schema.
+- Do NOT invent new columns or metrics.
+- Questions must be answerable using the dataset.
+- Use the column names naturally in the questions.
+
+The questions should help explore the data using typical analytics operations such as:
+- totals or aggregations
+- comparisons between columns
+- rankings (top / highest / lowest)
+- trends over time (if a time column exists)
+
+Guidelines:
+- Write clear natural-language questions.
+- Do not use SQL syntax.
+- Do not assume a specific industry (finance, sales, music, etc.).
+- Adapt the questions to the schema provided.
+
+Output format:
+- Return exactly 10 lines. No blank lines between them. No numbering, bullets, or extra text.
