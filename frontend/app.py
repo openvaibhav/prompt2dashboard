@@ -23,8 +23,8 @@ from summary_generator import generate_summary
 
 
 @st.cache_data(show_spinner=False)
-def cached_pipeline(df, schema, query):
-    sql_query = generate_sql(query, schema)
+def cached_pipeline(data_summary, df, schema, query):
+    sql_query = generate_sql(data_summary, query, schema)
     result_df = execute_query(df, sql_query)
     chart_types = generate_dashboard_charts(result_df, query)
     insights = generate_insights(result_df)
@@ -92,17 +92,20 @@ if st.session_state.df is None:
                     df, schema, numeric_cols, categorical_cols = load_schema(
                         uploaded_file
                     )
-                st.session_state.numeric_cols = numeric_cols
-                st.session_state.categorical_cols = categorical_cols
-                examples = generate_examples(
-                    schema, tuple(numeric_cols), tuple(categorical_cols)
-                )
-                st.session_state.examples = examples
+                with st.spinner("Analysing your data…"):
+                    data_summary = generate_summary(schema)
+                    st.session_state.data_summary = data_summary
+                    st.session_state.numeric_cols = numeric_cols
+                    st.session_state.categorical_cols = categorical_cols
+                with st.spinner("Going through the data…"):
+                    examples = generate_examples(
+                        data_summary, schema, tuple(numeric_cols), tuple(categorical_cols)
+                    )
+                    st.session_state.examples = examples
+                    
                 st.session_state.df = df
                 st.session_state.schema = schema
                 st.session_state.file_name = uploaded_file.name
-                with st.spinner("Analysing your data…"):
-                    data_summary = generate_summary(schema)
 
                 push_message(
                     "assistant",
@@ -144,45 +147,48 @@ with st.container():
             if "chart_types" in data and "result_df" in data:
                 result_df = data["result_df"]
                 chart_types = data["chart_types"]
-                for ct in chart_types:
-                    try:
-                        chart = render_chart(result_df, ct)
-                        if isinstance(chart, dict) and chart.get("type") == "metric":
-                            label = chart["label"].replace("_", " ").title()
-                            if chart["category"]:
-                                st.metric(
-                                    label=f"Top {label}",
-                                    value=f"{chart['category']} ({chart['value']:,.0f})",
-                                )
-                            else:
-                                st.metric(label=label, value=f"{chart['value']:,.0f}")
-                        else:
-                            st.plotly_chart(chart, use_container_width=True)
-                    except Exception:
-                        pass
 
-                if not result_df.empty and "pie" not in chart_types:
-                    mc = st.columns(3)
-                    mc[0].metric("Rows Returned", len(result_df))
-                    num_cols = result_df.select_dtypes(include="number").columns
-                    if len(num_cols):
-                        mc[1].metric(
-                            "Total Value", round(result_df[num_cols[0]].sum(), 2)
-                        )
-                    else:
-                        mc[1].metric("Columns", len(result_df.columns))
-                    mc[2].metric("Columns", len(result_df.columns))
-
-                if len(result_df) > 1 and len(result_df.columns) >= 2:
-                    top_row = result_df.sort_values(
-                        result_df.columns[1], ascending=False
-                    ).iloc[0]
-
+                if len(result_df) == 1 and len(result_df.columns) == 1:
+                    val = result_df.iloc[0, 0]
                     label = result_df.columns[0].replace("_", " ").title()
+                    formatted = f"{val:,.0f}" if isinstance(val, (int, float)) else str(val)
+                    st.metric(label=label, value=formatted)
+                else:
+                    for ct in chart_types:
+                        try:
+                            chart = render_chart(result_df, ct)
+                            if isinstance(chart, dict) and chart.get("type") == "metric":
+                                label = chart["label"].replace("_", " ").title()
+                                if chart["category"]:
+                                    st.metric(
+                                        label=f"Top {label}",
+                                        value=f"{chart['category']} ({chart['value']:,.0f})",
+                                    )
+                                else:
+                                    st.metric(label=label, value=f"{chart['value']:,.0f}")
+                            else:
+                                st.plotly_chart(chart, use_container_width=True)
+                        except Exception as e:
+                            print(f"[RENDER DEBUG] {ct} failed: {e}")
 
-                    st.metric(
-                        f"Top {label}", f"{top_row.iloc[0]} ({top_row.iloc[1]:,.0f})"
-                    )
+                    if not result_df.empty and "pie" not in chart_types:
+                        mc = st.columns(3)
+                        mc[0].metric("Rows Returned", len(result_df))
+                        num_cols = result_df.select_dtypes(include="number").columns
+                        if len(num_cols):
+                            mc[1].metric("Total Value", f"{result_df[num_cols[0]].sum():,.0f}")
+                        else:
+                            mc[1].metric("Columns", len(result_df.columns))
+                        mc[2].metric("Columns", len(result_df.columns))
+
+                    if len(result_df) > 1 and len(result_df.columns) >= 2:
+                        top_row = result_df.sort_values(
+                            result_df.columns[1], ascending=False
+                        ).iloc[0]
+                        label = result_df.columns[0].replace("_", " ").title()
+                        st.metric(
+                            f"Top {label}", f"{top_row.iloc[0]} ({top_row.iloc[1]:,.0f})"
+                        )
 
             if "insights" in data and "sql_query" in data:
                 ins_col, sql_col = st.columns([1.1, 1], gap="large")
@@ -241,6 +247,7 @@ with st.container():
                 unsafe_allow_html=True,
             )
 
+chat_placeholder = st.empty()
 _examples = st.session_state.get("examples", [])
 disabled_class = "examples-disabled" if HIDE_EXAMPLES else ""
 st.markdown(
@@ -274,10 +281,26 @@ if st.session_state.get("pending_query"):
             query = resolve_followup(st.session_state.last_query, query)
         st.session_state.last_query = query
 
-        with st.spinner("Generating dashboard…"):
-            sql_query, result_df, chart_types, insights = cached_pipeline(
-                st.session_state.df, st.session_state.schema, query
+        with chat_placeholder.container():
+            st.markdown(
+                """
+                <div class="chat-row assistant-row">
+                    <div class="avatar-col">
+                        <div class="avatar ai-avatar">📊</div>
+                    </div>
+                """,
+                unsafe_allow_html=True,
             )
+            with st.spinner(""):
+                sql_query, result_df, chart_types, insights = cached_pipeline(
+                    st.session_state.get("data_summary", ""), st.session_state.df, st.session_state.schema, query
+                )
+            st.markdown("""
+                            <div class="bubble assistant-bubble">
+                                <p>Generating dashboard…</p>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
 
         push_message(
             "assistant",

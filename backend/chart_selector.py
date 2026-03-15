@@ -66,6 +66,9 @@ def choose_chart_type(user_query: str, dataframe_columns: list[str]):
 
 
 def generate_dashboard_charts(df, user_query):
+    if len(df) == 1 and len(df.columns) == 1:
+        return []
+
     columns = list(df.columns)
     numeric_cols = df.select_dtypes(include="number").columns.tolist()
     categorical_cols = df.select_dtypes(exclude="number").columns.tolist()

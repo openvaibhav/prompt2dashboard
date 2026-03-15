@@ -69,12 +69,12 @@ def _base_examples(numeric_cols, categorical_cols):
 
 
 @lru_cache(maxsize=20)
-def generate_examples(schema: str, numeric_cols: tuple, categorical_cols: tuple):
+def generate_examples(data_summary: str, schema: str, numeric_cols: tuple, categorical_cols: tuple):
     base = _base_examples(list(numeric_cols), list(categorical_cols))
     
     try:
         base_text = "\n".join(base)
-        prompt = _PROMPT_TEMPLATE.format(schema=schema, base_examples=base_text)
+        prompt = _PROMPT_TEMPLATE.format(summary = data_summary, schema=schema, base_examples=base_text)
         raw = ask_gemini(prompt)
         examples = [
             line.strip("-•0123456789. ").strip().strip("_")

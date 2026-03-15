@@ -49,6 +49,21 @@ CANNOT_ANSWER_SIGNALS = [
     "unable to answer",
 ]
 
+def _is_truncated_sql(sql: str) -> bool:
+    """Detect if SQL was cut off mid-generation."""
+    sql = sql.strip().rstrip(";").strip()
+    
+    if sql.count("(") != sql.count(")"):
+        return True
+    
+    last_token = sql.split()[-1].upper() if sql.split() else ""
+    bad_endings = {"SELECT", "FROM", "WHERE", "AND", "OR", "BY", "ON", "SET", "WITH", "SUM", "AVG", "COUNT", "MAX", "MIN", "AS", "CASE", "WHEN", "THEN", "ELSE"}
+    if last_token in bad_endings:
+        return True
+    
+    return False
+
+
 def _clean_sql(raw: str):
     text = raw.strip()
     
@@ -63,20 +78,24 @@ def _clean_sql(raw: str):
     fenced = re.match(r"^```(?:sql|SQL)?\s*\n?(.*?)```$", text, re.DOTALL)
     if fenced:
         text = fenced.group(1).strip()
-        return text
+    else:
+        inline = re.match(r"^`([^`]+)`$", text)
+        if inline:
+            text = inline.group(1).strip()
+        else:
+            sql_start = re.search(
+                r"^\s*(SELECT|INSERT|UPDATE|DELETE|WITH|CREATE|DROP|ALTER|EXPLAIN)\b",
+                text,
+                re.IGNORECASE | re.MULTILINE,
+            )
+            if sql_start and sql_start.start() > 0:
+                text = text[sql_start.start():].strip()
 
-    inline = re.match(r"^`([^`]+)`$", text)
-    if inline:
-        text = inline.group(1).strip()
-        return text
-
-    sql_start = re.search(
-        r"^\s*(SELECT|INSERT|UPDATE|DELETE|WITH|CREATE|DROP|ALTER|EXPLAIN)\b",
-        text,
-        re.IGNORECASE | re.MULTILINE,
-    )
-    if sql_start and sql_start.start() > 0:
-        text = text[sql_start.start():].strip()
+    if _is_truncated_sql(text):
+        raise ValueError(
+            "That query was too complex to generate fully. "
+            "Try breaking it into simpler questions — e.g. ask about monthly views first, then filter by region separately."
+        )
 
     return text
 
@@ -93,7 +112,7 @@ def _validate_sql(sql: str):
         )
 
 
-def generate_sql(user_query: str, schema: str):
+def generate_sql(data_summary: str, user_query: str, schema: str):
 
     user_query = user_query.strip()
     schema = schema.strip()
@@ -112,7 +131,7 @@ def generate_sql(user_query: str, schema: str):
     columns_str = ", ".join(columns)
 
     prompt = _PROMPT_TEMPLATE.format(
-        schema=schema, user_query=user_query, columns=columns_str
+        summary = data_summary, schema=schema, user_query=user_query, columns=columns_str
     )
 
     logger.debug("===== SQL PROMPT SENT TO GEMINI =====")

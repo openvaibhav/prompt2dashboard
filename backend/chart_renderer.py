@@ -156,14 +156,11 @@ def _line(df: pd.DataFrame):
 
 
 def _pie(df: pd.DataFrame):
-    x_col, y_col = _detect_axes(df, prefer_datetime_x=False)
     names_col, values_col = _detect_pie_columns(df)
     df = df.nlargest(10, values_col)
     title = f"{values_col.replace('_', ' ').title()} by {names_col.replace('_', ' ').title()}"
     fig = px.pie(
         df,
-        x=x_col,
-        y=y_col,
         names=names_col,
         values=values_col,
         title=title,
@@ -171,7 +168,9 @@ def _pie(df: pd.DataFrame):
         hole=0.3,
     )
     fig.update_traces(
-        hovertemplate="<b>%{x}</b><br>Value: %{y}<extra></extra>", textposition="inside"
+        textposition="inside",
+        textinfo="percent+label",
+        hovertemplate="<b>%{label}</b><br>Value: %{value}<br>%{percent}<extra></extra>",
     )
     return fig
 

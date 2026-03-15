@@ -23,7 +23,7 @@ DEFAULT_MODEL = "gemini-2.5-flash"
 _GENERATION_CONFIG = genai.GenerationConfig(
     temperature=0.2,
     top_p=0.95,
-    max_output_tokens=1024
+    max_output_tokens=2048
 )
 
 _SAFETY_SETTINGS = [
