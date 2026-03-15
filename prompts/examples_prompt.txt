@@ -2,6 +2,9 @@ You are generating example questions for a conversational data analytics dashboa
 A user has uploaded a CSV dataset. Your job is to generate 10 natural, diverse, 
 and useful questions they might ask about their data.
 
+Summary of The the Dataset schema(Summary of what this dataset contains)
+{summary}
+
 DATASET SCHEMA
 {schema}
 
