@@ -181,14 +181,21 @@ with st.container():
                             mc[1].metric("Columns", len(result_df.columns))
                         mc[2].metric("Columns", len(result_df.columns))
 
-                    if len(result_df) > 1 and len(result_df.columns) >= 2:
-                        top_row = result_df.sort_values(
-                            result_df.columns[1], ascending=False
-                        ).iloc[0]
-                        label = result_df.columns[0].replace("_", " ").title()
-                        st.metric(
-                            f"Top {label}", f"{top_row.iloc[0]} ({top_row.iloc[1]:,.0f})"
-                        )
+                    if 1 < len(result_df) <= 20 and len(result_df.columns) >= 2:
+                        try:
+                            second_col = result_df.columns[1]
+                            # Only sort and show metric if second column is numeric
+                            if pd.api.types.is_numeric_dtype(result_df[second_col]):
+                                top_row = result_df.sort_values(second_col, ascending=False).iloc[0]
+                                label = result_df.columns[0].replace("_", " ").title()
+                                val = top_row.iloc[1]
+                                formatted_val = f"{val:,.0f}" if isinstance(val, (int, float)) else str(val)
+                                st.metric(
+                                    f"Top {label}",
+                                    f"{top_row.iloc[0]} ({formatted_val})"
+                                )
+                        except Exception:
+                            pass
 
             if "insights" in data and "sql_query" in data:
                 ins_col, sql_col = st.columns([1.1, 1], gap="large")
@@ -314,16 +321,19 @@ if st.session_state.get("pending_query"):
         )
 
     except ResourceExhausted:
-        push_message(
-            "assistant", "⚠️ AI quota exceeded — please retry in a few seconds."
-        )
+        cached_pipeline.clear()
+        push_message("assistant", "⚠️ AI quota exceeded — please retry in a few seconds.")
     except PermissionError as e:
+        cached_pipeline.clear()
         push_message("assistant", f"🔒 Access denied: {e}")
     except ValueError as e:
+        cached_pipeline.clear()
         push_message("assistant", f"⚠️ Data error: {e}")
     except RuntimeError as e:
+        cached_pipeline.clear()
         push_message("assistant", f"⚙️ Processing error: {e}")
     except Exception as e:
+        cached_pipeline.clear()
         push_message("assistant", f"Unexpected error — {type(e).__name__}: {e}")
         logger.exception("Unhandled pipeline error")
 

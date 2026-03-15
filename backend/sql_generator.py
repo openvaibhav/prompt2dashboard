@@ -28,11 +28,15 @@ SQLITE_RESERVED = {
 }
 
 def _quote_reserved_columns(sql: str, columns: list[str]) -> str:
-    """Wrap any column name that is a reserved SQL keyword in double quotes."""
     for col in columns:
-        if col.lower() in SQLITE_RESERVED:
+        needs_quoting = (
+            col.lower() in SQLITE_RESERVED or
+            bool(re.match(r'^\d', col)) or
+            bool(re.search(r'\s', col))
+        )
+        if needs_quoting:
             sql = re.sub(
-                rf'(?<!["\w]){re.escape(col)}(?!["\w])',
+                rf'(?<!["\'\w]){re.escape(col)}(?!["\'\w])',
                 f'"{col}"',
                 sql,
                 flags=re.IGNORECASE

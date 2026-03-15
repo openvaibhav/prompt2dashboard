@@ -85,19 +85,34 @@ def safe_read_csv(file):
 
 def _find_header_line(file):
     file.seek(0)
-
+    
     for i in range(30):
         line = file.readline()
-
+        
         if isinstance(line, bytes):
             line = line.decode(errors="ignore")
-
-        line = str(line).lower()
-
-        if "video_id" in line or "category" in line:
+        
+        line = line.strip()
+        
+        if not line:
+            continue
+        
+        tokens = [t.strip() for t in line.split(",") if t.strip()]
+        
+        if len(tokens) < 2:
+            continue
+        
+        non_numeric = sum(
+            1 for t in tokens
+            if not re.match(r'^-?\d+(\.\d+)?$', t.strip('"').strip("'"))
+        )
+        
+        if non_numeric / len(tokens) >= 0.6:
+            file.seek(0)
             return i
-
-    return None
+    
+    file.seek(0)
+    return 0
 
 def _clean_column_names(df: pd.DataFrame):
     clean_cols = []
@@ -139,67 +154,57 @@ def _clean_column_names(df: pd.DataFrame):
 
 
 def load_schema(csv_input, *, parse_dates=True, encoding="utf-8", **read_csv_kwargs):
-
     common_kwargs = {"low_memory": False, **read_csv_kwargs}
 
     if not isinstance(csv_input, (str, Path)):
-
         header_line = _find_header_line(csv_input)
-
         csv_input.seek(0)
 
-        if header_line is not None:
-            try:
-                df = pd.read_csv(csv_input, skiprows=header_line, encoding="utf-8", **common_kwargs)
-                df = _clean_column_names(df)
-                df = df.loc[:, ~df.columns.str.contains("^Unnamed")]
-                df.columns = [c.lower() for c in df.columns]
-            except UnicodeDecodeError:
-                csv_input.seek(0)
-                df = pd.read_csv(csv_input, skiprows=header_line, encoding="latin-1", **common_kwargs)
-                df = _clean_column_names(df)
-                df = df.loc[:, ~df.columns.str.contains("^Unnamed")]
-                df.columns = [c.lower() for c in df.columns]
-        else:
-            df = safe_read_csv(csv_input)
-            df = _clean_column_names(df)
-            df = df.loc[:, ~df.columns.str.contains("^Unnamed")]
-            df.columns = [c.lower() for c in df.columns]
+        try:
+            df = pd.read_csv(csv_input, skiprows=header_line, encoding="utf-8", **common_kwargs)
+        except UnicodeDecodeError:
+            csv_input.seek(0)
+            df = pd.read_csv(csv_input, skiprows=header_line, encoding="latin-1", **common_kwargs)
 
         table_name = "uploaded_dataset"
 
     else:
         csv_path = Path(csv_input)
-
         if not csv_path.exists():
             raise FileNotFoundError(f"CSV file not found: {csv_path.resolve()}")
 
         with open(csv_path, "rb") as f:
             header_line = _find_header_line(f)
 
-        if header_line is not None:
-            try:
-                df = pd.read_csv(csv_path, skiprows=header_line, encoding="utf-8", **common_kwargs)
-                df = _clean_column_names(df)
-                df = df.loc[:, ~df.columns.str.contains("^Unnamed")]
-                df.columns = [c.lower() for c in df.columns]
-            except UnicodeDecodeError:
-                df = pd.read_csv(csv_path, skiprows=header_line, encoding="latin-1", **common_kwargs)
-                df = _clean_column_names(df)
-                df = df.loc[:, ~df.columns.str.contains("^Unnamed")]
-                df.columns = [c.lower() for c in df.columns]
-        else:
-            df = safe_read_csv(csv_path)
-            df = _clean_column_names(df)
-            df = df.loc[:, ~df.columns.str.contains("^Unnamed")]
-            df.columns = [c.lower() for c in df.columns]
+        try:
+            df = pd.read_csv(csv_path, skiprows=header_line, encoding="utf-8", **common_kwargs)
+        except UnicodeDecodeError:
+            df = pd.read_csv(csv_path, skiprows=header_line, encoding="latin-1", **common_kwargs)
 
         table_name = csv_path.stem.lower()
+
+    df = _clean_column_names(df)
+    df = df.loc[:, ~df.columns.str.contains("^Unnamed")]
+    df.columns = [c.lower() for c in df.columns]
+
+    for col in df.columns:
+        if _looks_like_datetime_column(col) and df[col].dtype == object:
+            try:
+                df.loc[:, col] = pd.to_datetime(df[col], errors="coerce")
+            except Exception:
+                pass
+
+    # Guards
+    if df.empty or len(df.columns) == 0:
+        raise ValueError("The uploaded CSV appears to be empty or has no readable columns.")
+    if len(df.columns) == 1:
+        raise ValueError("CSV must have at least 2 columns to analyse.")
 
     schema_description = _build_schema_description(table_name, df)
 
     numeric_cols = df.select_dtypes(include="number").columns.tolist()
-    categorical_cols = df.select_dtypes(exclude="number").columns.tolist()
+    datetime_cols = df.select_dtypes(include="datetime").columns.tolist()
+    categorical_cols = df.select_dtypes(exclude=["number", "datetime"]).columns.tolist()
 
     schema_description += "\n\nNumeric columns: " + ", ".join(numeric_cols)
     schema_description += "\nCategorical columns: " + ", ".join(categorical_cols)

@@ -18,7 +18,19 @@ def _extract_table_name(sql_query: str):
 
 
 def _register_dataframe(conn: sqlite3.Connection, df: pd.DataFrame, table_name: str):
-
+    df = df.copy()
+    for col in df.columns:
+        if (
+            pd.api.types.is_datetime64_any_dtype(df[col]) or
+            pd.api.types.is_datetime64_dtype(df[col]) or
+            str(df[col].dtype) == "datetime64[ns]" or
+            hasattr(df[col], 'dt')
+        ):
+            df[col] = df[col].astype(str)
+        elif df[col].dtype == object:
+            sample = df[col].dropna().head(1)
+            if len(sample) > 0 and isinstance(sample.iloc[0], pd.Timestamp):
+                df[col] = df[col].astype(str)
     df.to_sql(table_name, conn, if_exists="replace", index=False)
 
 
@@ -78,6 +90,12 @@ def execute_query(
                 for c in result.columns
             ]
             result = result.dropna(how="all")
+            
+            if result.empty:
+                raise ValueError(
+                    "The query returned no results. "
+                    "Try broadening your question or check if the data matches your filter."
+                )
             
 
     except sqlite3.OperationalError as exc:

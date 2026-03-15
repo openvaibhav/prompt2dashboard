@@ -72,26 +72,37 @@ def generate_dashboard_charts(df, user_query):
     columns = list(df.columns)
     numeric_cols = df.select_dtypes(include="number").columns.tolist()
     categorical_cols = df.select_dtypes(exclude="number").columns.tolist()
+    user_query_lower = user_query.lower()
+
+    explicit_map = {
+        "pie": ["pie chart", "pie graph", "donut chart", "donut"],
+        "bar": ["bar chart", "bar graph", "histogram"],
+        "line": ["line chart", "line graph", "trend chart"],
+        "scatter": ["scatter plot", "scatter chart", "scatter graph", "scatter"],
+    }
+
+    for chart_type, keywords in explicit_map.items():
+        if any(kw in user_query_lower for kw in keywords):
+            print(f"[CHART DEBUG] explicit match → {chart_type}")
+            return [chart_type]
 
     main_chart = choose_chart_type(user_query, columns)
-    
+    print(f"[CHART DEBUG] smart detection → {main_chart}")
+
     charts = [main_chart]
 
-    if main_chart == "pie":
-        if categorical_cols and numeric_cols:
-            charts.append("bar")
-
-    elif main_chart == "bar":
+    if main_chart == "bar":
         if len(numeric_cols) >= 2 and len(df) > 5:
             charts.append("scatter")
         elif len(categorical_cols) >= 1 and len(numeric_cols) >= 1 and len(df) <= 8:
             charts.append("pie")
-
     elif main_chart == "line":
         if categorical_cols and numeric_cols:
             charts.append("bar")
-
     elif main_chart == "scatter":
+        if categorical_cols and numeric_cols:
+            charts.append("bar")
+    elif main_chart == "pie":
         if categorical_cols and numeric_cols:
             charts.append("bar")
 

@@ -31,6 +31,13 @@ def _is_datetime_column(col: str):
     return any(k in col for k in datetime_keywords)
 
 def _base_examples(numeric_cols, categorical_cols):
+    if not numeric_cols and not categorical_cols:
+        return [
+            "Show me the data",
+            "How many records are there?",
+            "Show all columns",
+        ]
+
     real_numeric = [c for c in numeric_cols if not _is_id_column(c)]
     
     datetime_cols = [c for c in categorical_cols if _is_datetime_column(c)]
@@ -38,6 +45,11 @@ def _base_examples(numeric_cols, categorical_cols):
         c for c in categorical_cols 
         if not _is_id_column(c) and not _is_datetime_column(c)
     ]
+    
+    if not real_numeric and numeric_cols:
+        real_numeric = numeric_cols[:2]
+    if not real_categorical and categorical_cols:
+        real_categorical = [c for c in categorical_cols if not _is_datetime_column(c)][:2]
 
     num = [_prettify_col(c) for c in real_numeric]
     cat = [_prettify_col(c) for c in real_categorical]

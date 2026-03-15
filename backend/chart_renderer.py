@@ -98,6 +98,10 @@ def _detect_pie_columns(df: pd.DataFrame):
             )
         values_col = remaining[0]
 
+    df[values_col] = pd.to_numeric(df[values_col], errors="coerce")
+    if df[values_col].isna().all():
+        raise ValueError(f"Column '{values_col}' has no valid numeric values to chart.")
+
     logger.debug(
         "Auto-detected pie columns: names=%r, values=%r", names_col, values_col
     )
@@ -112,6 +116,11 @@ def _friendly_title(x_col: str, y_col: str, chart_type: str):
 
 def _bar(df: pd.DataFrame):
     x_col, y_col = _detect_axes(df, prefer_datetime_x=False)
+
+    df = df.dropna(subset=[y_col])
+    if df.empty:
+        raise ValueError("No valid data to chart after removing nulls.")
+
     title = _friendly_title(x_col, y_col, "bar")
     fig = px.bar(
         df,
@@ -128,12 +137,17 @@ def _bar(df: pd.DataFrame):
     fig.update_layout(
         xaxis_title=x_col.replace("_", " ").title(),
         yaxis_title=y_col.replace("_", " ").title(),
+        yaxis=dict(rangemode="tozero"),
     )
     return fig
 
 
 def _line(df: pd.DataFrame):
     x_col, y_col = _detect_axes(df, prefer_datetime_x=True)
+    df = df.dropna(subset=[y_col])
+    if df.empty:
+        raise ValueError("No valid data to chart after removing nulls.")
+
     df = df.sort_values(by=x_col)
     title = _friendly_title(x_col, y_col, "line")
     fig = px.line(
@@ -146,7 +160,6 @@ def _line(df: pd.DataFrame):
     )
     fig.update_traces(
         hovertemplate="<b>%{x}</b><br>Value: %{y}<extra></extra>",
-        textposition="outside",
     )
     fig.update_layout(
         xaxis_title=x_col.replace("_", " ").title(),
@@ -157,6 +170,11 @@ def _line(df: pd.DataFrame):
 
 def _pie(df: pd.DataFrame):
     names_col, values_col = _detect_pie_columns(df)
+
+    df = df.dropna(subset=[values_col])
+    if df.empty:
+        raise ValueError("No valid data to chart after removing nulls.")
+
     df = df.nlargest(10, values_col)
     title = f"{values_col.replace('_', ' ').title()} by {names_col.replace('_', ' ').title()}"
     fig = px.pie(
@@ -169,8 +187,23 @@ def _pie(df: pd.DataFrame):
     )
     fig.update_traces(
         textposition="inside",
-        textinfo="percent+label",
-        hovertemplate="<b>%{label}</b><br>Value: %{value}<br>%{percent}<extra></extra>",
+        textinfo="percent",
+        hovertemplate="<b>%{label}</b><br>Count: %{value}<br>%{percent}<extra></extra>",
+    )
+    fig.update_layout(
+        margin=dict(t=50, l=10, r=150, b=10),
+        legend=dict(
+            orientation="v",
+            yanchor="middle",
+            y=0.5,
+            xanchor="left",
+            x=1.02,
+            font=dict(size=10),
+            bgcolor="rgba(0,0,0,0)",
+            borderwidth=0,
+            itemwidth=30,
+        ),
+        showlegend=True,
     )
     return fig
 
@@ -182,6 +215,11 @@ def _scatter(df: pd.DataFrame):
         logger.debug("Auto-detected scatter axes: x=%r, y=%r", x_col, y_col)
     else:
         x_col, y_col = _detect_axes(df, prefer_datetime_x=False)
+
+    df = df.dropna(subset=[x_col, y_col])
+    if df.empty:
+        raise ValueError("No valid data to chart after removing nulls.")
+
     title = _friendly_title(x_col, y_col, "scatter")
 
     categorical_cols = _get_categorical_columns(df)
@@ -202,6 +240,17 @@ def _scatter(df: pd.DataFrame):
     fig.update_layout(
         xaxis_title=x_col.replace("_", " ").title(),
         yaxis_title=y_col.replace("_", " ").title(),
+        margin=dict(t=50, l=10, r=150, b=10),
+        legend=dict(
+            orientation="v",
+            yanchor="middle",
+            y=0.5,
+            xanchor="left",
+            x=1.02,
+            bgcolor="rgba(0,0,0,0)",
+            borderwidth=0,
+            font=dict(size=11),
+        ),
     )
     return fig
 
@@ -235,7 +284,7 @@ def render_chart(df: pd.DataFrame, chart_type: str):
             "type": "metric",
             "label": df.columns[0],
             "value": df.iloc[0, 0] if df.shape[1] == 1 else df.iloc[0, 1],
-            "category": df.iloc[0, 0] if df.shape[1] > 1 else None
+            "category": df.iloc[0, 0] if df.shape[1] > 1 else None,
         }
 
     builder = _CHART_BUILDERS[chart_type]
@@ -245,11 +294,19 @@ def render_chart(df: pd.DataFrame, chart_type: str):
         plot_bgcolor="rgba(0,0,0,0)",
         paper_bgcolor="rgba(0,0,0,0)",
         font=dict(size=13),
-        margin=dict(t=50, l=10, r=10, b=10),
-        legend=dict(orientation="h", yanchor="bottom", y=-0.25),
         hovermode="x unified",
     )
-    
+
+    if chart_type in {"bar", "line"}:
+        fig.update_layout(
+            margin=dict(t=50, l=10, r=10, b=10),
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=-0.25,
+            ),
+        )
+
     fig.update_xaxes(showgrid=True, gridcolor="rgba(200,200,200,0.1)")
     fig.update_yaxes(showgrid=True, gridcolor="rgba(200,200,200,0.1)")
 
