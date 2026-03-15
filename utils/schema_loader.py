@@ -22,13 +22,6 @@ def _looks_like_datetime_column(col_name: str):
 
     return any(k in col for k in datetime_keywords)
 
-def _looks_like_datetime_column(name: str):
-    name = name.lower()
-    return any(
-        key in name
-        for key in ["time", "date", "timestamp", "created", "published", "upload"]
-    )
-
 def _infer_type_label(series: pd.Series):
 
     dtype = series.dtype
@@ -112,14 +105,27 @@ def _clean_column_names(df: pd.DataFrame):
 
     for col in df.columns:
         col = str(col)
-
         col = re.sub(r"<.*?>", "", col)
-
         col = re.sub(r"[^a-zA-Z0-9_]", " ", col)
-
         tokens = col.lower().split()
 
-        col = tokens[-1] if tokens else "column"
+        if not tokens:
+            col = "column"
+        elif len("_".join(tokens)) > 40:
+            # For long mangled names, find the most meaningful token
+            # Prioritize semantic keywords over generic ones
+            priority_keywords = [
+                "timestamp", "date", "time", "datetime",  # datetime first
+                "id", "name", "url", "type", "code",
+                "category", "region", "language"
+            ]
+            col = tokens[-1]  # default to last token
+            for keyword in priority_keywords:
+                if any(keyword in t for t in tokens):
+                    col = keyword
+                    break
+        else:
+            col = "_".join(tokens)
 
         base = col
         i = 1
@@ -200,4 +206,4 @@ def load_schema(csv_input, *, parse_dates=True, encoding="utf-8", **read_csv_kwa
     schema_description += "\n\nNumeric columns: " + ", ".join(numeric_cols)
     schema_description += "\nCategorical columns: " + ", ".join(categorical_cols)
 
-    return df, schema_description
+    return df, schema_description, numeric_cols, categorical_cols
