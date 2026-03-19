@@ -83,11 +83,9 @@ def generate_dashboard_charts(df, user_query):
 
     for chart_type, keywords in explicit_map.items():
         if any(kw in user_query_lower for kw in keywords):
-            print(f"[CHART DEBUG] explicit match → {chart_type}")
             return [chart_type]
 
     main_chart = choose_chart_type(user_query, columns)
-    print(f"[CHART DEBUG] smart detection → {main_chart}")
 
     charts = [main_chart]
 

@@ -26,11 +26,11 @@ def _register_dataframe(conn: sqlite3.Connection, df: pd.DataFrame, table_name: 
             str(df[col].dtype) == "datetime64[ns]" or
             hasattr(df[col], 'dt')
         ):
-            df[col] = df[col].astype(str)
+            df.loc[:, col] = df[col].astype(str)
         elif df[col].dtype == object:
             sample = df[col].dropna().head(1)
             if len(sample) > 0 and isinstance(sample.iloc[0], pd.Timestamp):
-                df[col] = df[col].astype(str)
+                df.loc[:, col] = df[col].astype(str)
     df.to_sql(table_name, conn, if_exists="replace", index=False)
 
 
